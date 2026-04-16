@@ -1055,7 +1055,7 @@ function ScatterPlot({ characters }) {
   );
 }
 
-// 히트맵 (기존 유지 - 간소화)
+// 히트맵 - 색상 그라디언트 (파랑→노랑→빨강)
 function HouseHeatmap({ characters }) {
   const houses = ['그리핀도르', '슬리데린', '레이븐클로', '후플푸프'];
   const stats = ['magic', 'combat', 'courage', 'quidditch', 'teamwork', 'growth'];
@@ -1069,6 +1069,32 @@ function HouseHeatmap({ characters }) {
     });
   });
 
+  // 히트맵 색상 함수: 0-100 값을 파랑→노랑→빨강으로 변환
+  const getHeatmapColor = (value) => {
+    const normalized = value / 100; // 0~1 사이 값
+    
+    if (normalized < 0.5) {
+      // 0~50: 파랑 → 노랑
+      const ratio = normalized * 2; // 0~1
+      const r = Math.round(59 + (255 - 59) * ratio);
+      const g = Math.round(130 + (223 - 130) * ratio);
+      const b = Math.round(246 - 246 * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    } else {
+      // 50~100: 노랑 → 빨강
+      const ratio = (normalized - 0.5) * 2; // 0~1
+      const r = 255;
+      const g = Math.round(223 - 223 * ratio);
+      const b = 0;
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+  };
+
+  // 텍스트 색상 (가독성을 위해 중간 값에서 검정색으로 전환)
+  const getTextColor = (value) => {
+    return value > 40 && value < 75 ? '#000000' : '#ffffff';
+  };
+
   const cellWidth = 80;
   const cellHeight = 40;
 
@@ -1080,7 +1106,8 @@ function HouseHeatmap({ characters }) {
       </h3>
 
       <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${(stats.length + 1) * cellWidth} ${(houses.length + 1) * cellHeight + 20}`} className="w-full min-w-[500px]">
+        <svg viewBox={`0 0 ${(stats.length + 1) * cellWidth} ${(houses.length + 1) * cellHeight + 40}`} className="w-full min-w-[500px]">
+          {/* 컬럼 헤더 */}
           {statLabels.map((label, i) => (
             <text
               key={i}
@@ -1096,6 +1123,7 @@ function HouseHeatmap({ characters }) {
             </text>
           ))}
 
+          {/* 데이터 셀 */}
           {houses.map((house, rowIndex) => (
             <g key={house}>
               <text
@@ -1111,8 +1139,8 @@ function HouseHeatmap({ characters }) {
               </text>
               
               {houseStats[rowIndex].map((value, colIndex) => {
-                const intensity = value / 100;
-                const color = `rgba(245, 158, 11, ${intensity})`;
+                const color = getHeatmapColor(value);
+                const textColor = getTextColor(value);
                 
                 return (
                   <g key={colIndex}>
@@ -1130,7 +1158,7 @@ function HouseHeatmap({ characters }) {
                       y={(rowIndex + 1) * cellHeight + cellHeight / 2}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fill="#fff"
+                      fill={textColor}
                       fontSize="13"
                       fontWeight="bold"
                     >
@@ -1141,12 +1169,67 @@ function HouseHeatmap({ characters }) {
               })}
             </g>
           ))}
+
+          {/* 색상 범례 */}
+          <g transform={`translate(${cellWidth}, ${(houses.length + 1) * cellHeight + 15})`}>
+            {[0, 25, 50, 75, 100].map((val, i) => {
+              const x = i * ((stats.length * cellWidth) / 4);
+              const color = getHeatmapColor(val);
+              return (
+                <g key={val}>
+                  <rect
+                    x={x}
+                    y={0}
+                    width={((stats.length * cellWidth) / 4)}
+                    height={15}
+                    fill={color}
+                    stroke="#1e293b"
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={x + ((stats.length * cellWidth) / 8)}
+                    y={-3}
+                    textAnchor="middle"
+                    fill="#94a3b8"
+                    fontSize="10"
+                  >
+                    {val}
+                  </text>
+                </g>
+              );
+            })}
+            <text
+              x={-10}
+              y={8}
+              textAnchor="end"
+              fill="#94a3b8"
+              fontSize="10"
+              fontWeight="600"
+            >
+              낮음
+            </text>
+            <text
+              x={(stats.length * cellWidth) + 10}
+              y={8}
+              textAnchor="start"
+              fill="#94a3b8"
+              fontSize="10"
+              fontWeight="600"
+            >
+              높음
+            </text>
+          </g>
         </svg>
       </div>
 
       <div className="mt-4 text-xs sm:text-sm text-slate-300 bg-slate-700 rounded p-3">
-        <p className="font-bold text-orange-400 mb-1">📊 분석 포인트</p>
-        <p>색이 진할수록 높은 수치입니다. 각 기숙사의 강점과 약점을 한눈에 비교해보세요!</p>
+        <p className="font-bold text-orange-400 mb-1">📊 히트맵 분석 가이드</p>
+        <p className="mb-2">
+          <span className="inline-block w-3 h-3 bg-blue-400 mr-1"></span>파란색 (낮음) → 
+          <span className="inline-block w-3 h-3 bg-yellow-400 mx-1"></span>노란색 (중간) → 
+          <span className="inline-block w-3 h-3 bg-red-500 mx-1"></span>빨간색 (높음)
+        </p>
+        <p>각 기숙사의 강점과 약점을 색상으로 한눈에 비교해보세요!</p>
       </div>
     </div>
   );
