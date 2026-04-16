@@ -20,26 +20,33 @@ const CHARACTERS = [
   { name: '세드릭', house: '후플푸프', blood: '혼혈', magic: 78, wealth: 65, grade: 82, courage: 88, combat: 75, darkArts: 0, quidditch: 92, teamwork: 85, growth: 80, love: 85 }
 ];
 
-const GROWTH_DATA = {
-  '해리 포터': [
-    { year: 1, magic: 60, combat: 50, courage: 70, darkArts: 0 },
-    { year: 2, magic: 65, combat: 55, courage: 75, darkArts: 0 },
-    { year: 3, magic: 70, combat: 60, courage: 80, darkArts: 0 },
-    { year: 4, magic: 75, combat: 70, courage: 85, darkArts: 0 },
-    { year: 5, magic: 80, combat: 75, courage: 90, darkArts: 0 },
-    { year: 6, magic: 83, combat: 78, courage: 92, darkArts: 0 },
-    { year: 7, magic: 85, combat: 80, courage: 95, darkArts: 0 }
-  ],
-  '볼드모트': [
-    { year: 1, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 2, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 3, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 4, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 5, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 6, magic: 100, combat: 100, courage: 70, darkArts: 100 },
-    { year: 7, magic: 100, combat: 100, courage: 70, darkArts: 100 }
-  ]
+// 모든 캐릭터의 학년별 성장 데이터 (간단한 성장 패턴 생성)
+const generateGrowthData = (char) => {
+  const finalMagic = char.magic;
+  const finalCombat = char.combat;
+  const finalCourage = char.courage;
+  const finalDarkArts = char.darkArts;
+  
+  // 성장성에 따라 초기값 결정 (성장성 높으면 낮게 시작)
+  const growthFactor = char.growth / 100;
+  const startRatio = 1 - (growthFactor * 0.4); // 성장성 100이면 60%부터 시작
+  
+  return [
+    { year: 1, magic: Math.round(finalMagic * startRatio), combat: Math.round(finalCombat * startRatio), courage: Math.round(finalCourage * startRatio), darkArts: finalDarkArts },
+    { year: 2, magic: Math.round(finalMagic * (startRatio + growthFactor * 0.067)), combat: Math.round(finalCombat * (startRatio + growthFactor * 0.067)), courage: Math.round(finalCourage * (startRatio + growthFactor * 0.067)), darkArts: finalDarkArts },
+    { year: 3, magic: Math.round(finalMagic * (startRatio + growthFactor * 0.133)), combat: Math.round(finalCombat * (startRatio + growthFactor * 0.133)), courage: Math.round(finalCourage * (startRatio + growthFactor * 0.133)), darkArts: finalDarkArts },
+    { year: 4, magic: Math.round(finalMagic * (startRatio + growthFactor * 0.2)), combat: Math.round(finalCombat * (startRatio + growthFactor * 0.2)), courage: Math.round(finalCourage * (startRatio + growthFactor * 0.2)), darkArts: finalDarkArts },
+    { year: 5, magic: Math.round(finalMagic * (startRatio + growthFactor * 0.267)), combat: Math.round(finalCombat * (startRatio + growthFactor * 0.267)), courage: Math.round(finalCourage * (startRatio + growthFactor * 0.267)), darkArts: finalDarkArts },
+    { year: 6, magic: Math.round(finalMagic * (startRatio + growthFactor * 0.333)), combat: Math.round(finalCombat * (startRatio + growthFactor * 0.333)), courage: Math.round(finalCourage * (startRatio + growthFactor * 0.333)), darkArts: finalDarkArts },
+    { year: 7, magic: finalMagic, combat: finalCombat, courage: finalCourage, darkArts: finalDarkArts }
+  ];
 };
+
+// 모든 캐릭터의 성장 데이터 생성
+const GROWTH_DATA = {};
+CHARACTERS.forEach(char => {
+  GROWTH_DATA[char.name] = generateGrowthData(char);
+});
 
 // 캐릭터별 전용 상황 변수 정의
 const CHARACTER_MODIFIERS = {
@@ -369,23 +376,51 @@ function HiddenStatsRadar({ character }) {
   );
 }
 
-// 학년별 성장 차트
-function GrowthChart({ selectedYear }) {
-  const harryData = GROWTH_DATA['해리 포터'];
-  const voldemortData = GROWTH_DATA['볼드모트'];
+// 학년별 성장 차트 - 선택한 캐릭터 + 비교 대상
+function GrowthChart({ selectedYear, selectedCharacter }) {
+  const [compareChar, setCompareChar] = useState('비교 안 함');
+  
+  const mainData = GROWTH_DATA[selectedCharacter.name] || GROWTH_DATA['해리 포터'];
+  const compareData = compareChar !== '비교 안 함' ? GROWTH_DATA[compareChar] : null;
   
   const width = 600;
   const height = 350;
   const padding = 60;
 
+  // 성장률 계산
+  const calculateGrowthRate = (data) => {
+    const start = data[0].magic;
+    const end = data[6].magic;
+    return start > 0 ? (((end - start) / start) * 100).toFixed(0) : 0;
+  };
+
+  const mainGrowthRate = calculateGrowthRate(mainData);
+  const compareGrowthRate = compareData ? calculateGrowthRate(compareData) : 0;
+
   return (
     <div className="bg-slate-800 rounded-lg p-3 sm:p-6">
       <h3 className="text-lg sm:text-xl font-bold text-cyan-400 mb-3 sm:mb-4 flex items-center gap-2">
         <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
-        <span className="text-sm sm:text-base">학년별 성장 곡선 (현재: {selectedYear}학년)</span>
+        <span className="text-sm sm:text-base">{selectedCharacter.name}의 성장 곡선</span>
       </h3>
+
+      {/* 비교 대상 선택 */}
+      <div className="mb-4">
+        <label className="block text-xs sm:text-sm text-slate-400 mb-2">비교 대상 선택</label>
+        <select
+          value={compareChar}
+          onChange={(e) => setCompareChar(e.target.value)}
+          className="w-full sm:w-64 bg-slate-700 text-white rounded px-2 sm:px-3 py-2 border border-slate-600 text-sm"
+        >
+          <option value="비교 안 함">비교 안 함</option>
+          {CHARACTERS.filter(c => c.name !== selectedCharacter.name).map(char => (
+            <option key={char.name} value={char.name}>{char.name}</option>
+          ))}
+        </select>
+      </div>
       
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full">
+        {/* 그리드 */}
         {[1, 2, 3, 4, 5, 6, 7].map(year => {
           const x = padding + ((year - 1) / 6) * (width - 2 * padding);
           return (
@@ -438,8 +473,9 @@ function GrowthChart({ selectedYear }) {
           );
         })}
 
+        {/* 메인 캐릭터 선 */}
         <path
-          d={harryData.map((data, i) => {
+          d={mainData.map((data, i) => {
             const x = padding + ((data.year - 1) / 6) * (width - 2 * padding);
             const y = height - padding - (data.magic / 100) * (height - 2 * padding);
             return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
@@ -449,42 +485,54 @@ function GrowthChart({ selectedYear }) {
           strokeWidth="3"
         />
 
-        <path
-          d={voldemortData.map((data, i) => {
-            const x = padding + ((data.year - 1) / 6) * (width - 2 * padding);
-            const y = height - padding - (data.magic / 100) * (height - 2 * padding);
-            return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-          }).join(' ')}
-          fill="none"
-          stroke="#dc2626"
-          strokeWidth="3"
-          strokeDasharray="5,5"
-        />
+        {/* 비교 캐릭터 선 */}
+        {compareData && (
+          <path
+            d={compareData.map((data, i) => {
+              const x = padding + ((data.year - 1) / 6) * (width - 2 * padding);
+              const y = height - padding - (data.magic / 100) * (height - 2 * padding);
+              return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ')}
+            fill="none"
+            stroke="#dc2626"
+            strokeWidth="3"
+            strokeDasharray="5,5"
+          />
+        )}
 
+        {/* 현재 학년 표시 */}
         {(() => {
-          const harryPoint = harryData[selectedYear - 1];
-          const voldemortPoint = voldemortData[selectedYear - 1];
+          const mainPoint = mainData[selectedYear - 1];
           const x = padding + ((selectedYear - 1) / 6) * (width - 2 * padding);
-          const harryY = height - padding - (harryPoint.magic / 100) * (height - 2 * padding);
-          const voldemortY = height - padding - (voldemortPoint.magic / 100) * (height - 2 * padding);
+          const mainY = height - padding - (mainPoint.magic / 100) * (height - 2 * padding);
 
           return (
             <>
-              <circle cx={x} cy={harryY} r="6" fill="#10b981" />
-              <circle cx={x} cy={voldemortY} r="6" fill="#dc2626" />
+              <circle cx={x} cy={mainY} r="6" fill="#10b981" />
+              {compareData && (() => {
+                const comparePoint = compareData[selectedYear - 1];
+                const compareY = height - padding - (comparePoint.magic / 100) * (height - 2 * padding);
+                return <circle cx={x} cy={compareY} r="6" fill="#dc2626" />;
+              })()}
               <line x1={x} y1={padding} x2={x} y2={height - padding} stroke="#fbbf24" strokeWidth="2" opacity="0.5" />
             </>
           );
         })()}
 
-        <g transform={`translate(${width - 150}, 30)`}>
+        {/* 범례 */}
+        <g transform={`translate(${width - 180}, 30)`}>
           <line x1="0" y1="0" x2="30" y2="0" stroke="#10b981" strokeWidth="3" />
-          <text x="35" y="5" fill="#10b981" fontSize="13">해리 (성장중)</text>
+          <text x="35" y="5" fill="#10b981" fontSize="12">{selectedCharacter.name}</text>
           
-          <line x1="0" y1="25" x2="30" y2="25" stroke="#dc2626" strokeWidth="3" strokeDasharray="5,5" />
-          <text x="35" y="30" fill="#dc2626" fontSize="13">볼드모트 (정체)</text>
+          {compareData && (
+            <>
+              <line x1="0" y1="25" x2="30" y2="25" stroke="#dc2626" strokeWidth="3" strokeDasharray="5,5" />
+              <text x="35" y="30" fill="#dc2626" fontSize="12">{compareChar}</text>
+            </>
+          )}
         </g>
 
+        {/* 축 레이블 */}
         <text x={width / 2} y={height - 10} textAnchor="middle" fill="#cbd5e1" fontSize="14" fontWeight="bold">
           학년
         </text>
@@ -493,17 +541,25 @@ function GrowthChart({ selectedYear }) {
         </text>
       </svg>
 
+      {/* 성장률 정보 */}
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
         <div className="bg-emerald-900/30 rounded p-3">
-          <div className="text-emerald-400 font-bold mb-1">해리의 성장률</div>
-          <div className="text-emerald-200">1학년: 60 → 7학년: 85</div>
-          <div className="text-emerald-300 font-bold">+42% 성장! 📈</div>
+          <div className="text-emerald-400 font-bold mb-1">{selectedCharacter.name}의 성장률</div>
+          <div className="text-emerald-200">1학년: {mainData[0].magic} → 7학년: {mainData[6].magic}</div>
+          <div className="text-emerald-300 font-bold">
+            {mainGrowthRate > 0 ? `+${mainGrowthRate}% 성장! 📈` : '0% 성장 (정체)'}
+          </div>
         </div>
-        <div className="bg-red-900/30 rounded p-3">
-          <div className="text-red-400 font-bold mb-1">볼드모트의 성장률</div>
-          <div className="text-red-200">1학년: 100 → 7학년: 100</div>
-          <div className="text-red-300 font-bold">0% 성장 (정체)</div>
-        </div>
+        
+        {compareData && (
+          <div className="bg-red-900/30 rounded p-3">
+            <div className="text-red-400 font-bold mb-1">{compareChar}의 성장률</div>
+            <div className="text-red-200">1학년: {compareData[0].magic} → 7학년: {compareData[6].magic}</div>
+            <div className="text-red-300 font-bold">
+              {compareGrowthRate > 0 ? `+${compareGrowthRate}% 성장! 📈` : '0% 성장 (정체)'}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1277,7 +1333,7 @@ function App() {
             <div>
               {activeTab === 'radar' && <RadarChart character={selectedCharacter} />}
               {activeTab === 'hidden' && <HiddenStatsRadar character={selectedCharacter} />}
-              {activeTab === 'growth' && <GrowthChart selectedYear={selectedYear} />}
+              {activeTab === 'growth' && <GrowthChart selectedYear={selectedYear} selectedCharacter={selectedCharacter} />}
               {activeTab === 'scenario' && <ScenarioSimulator characters={filteredCharacters} />}
               {activeTab === 'team' && <TeamBattleSimulator characters={filteredCharacters} />}
               {activeTab === 'scatter' && <ScatterPlot characters={filteredCharacters} />}
