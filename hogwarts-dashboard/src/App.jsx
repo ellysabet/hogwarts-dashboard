@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wand2, Swords, Target, TrendingUp, Users, Sparkles, BookOpen, Wind, Clock, Heart, Shield, TrendingDown, Award, Zap, Menu, X } from 'lucide-react';
+import { Wand2, Swords, Target, TrendingUp, Users, Sparkles, BookOpen, Wind, Clock, Heart, Shield, TrendingDown, Award, Zap, Plus, Minus, Compass } from 'lucide-react';
 
 // 15명의 캐릭터 데이터
 const CHARACTERS = [
@@ -38,6 +38,85 @@ const GROWTH_DATA = {
     { year: 5, magic: 100, combat: 100, courage: 70, darkArts: 100 },
     { year: 6, magic: 100, combat: 100, courage: 70, darkArts: 100 },
     { year: 7, magic: 100, combat: 100, courage: 70, darkArts: 100 }
+  ]
+};
+
+// 캐릭터별 전용 상황 변수 정의
+const CHARACTER_MODIFIERS = {
+  '해리 포터': [
+    { id: 'mothersLove', label: '릴리의 보호', value: 50, description: '어머니의 희생으로 받은 보호 마법' },
+    { id: 'friendship', label: '우정의 힘', value: 30, description: '친구들과의 유대감' },
+    { id: 'prophecy', label: '예언의 힘', value: 25, description: '선택받은 자의 운명' }
+  ],
+  '헤르미온느': [
+    { id: 'knowledge', label: '지식의 힘', value: 35, description: '방대한 마법 지식' },
+    { id: 'preparation', label: '완벽한 준비', value: 25, description: '철저한 사전 준비' },
+    { id: 'logic', label: '논리적 사고', value: 20, description: '냉철한 판단력' }
+  ],
+  '론': [
+    { id: 'loyalty', label: '충성심', value: 30, description: '친구를 위한 헌신' },
+    { id: 'bravery', label: '그리핀도르의 용기', value: 25, description: '두려움을 극복하는 힘' },
+    { id: 'chess', label: '전략적 사고', value: 20, description: '체스로 단련된 전술' }
+  ],
+  '볼드모트': [
+    { id: 'horcrux', label: '호크룩스 약점', value: -30, description: '불완전한 영혼' },
+    { id: 'fear', label: '공포 전략', value: 25, description: '적에게 공포 심어주기' },
+    { id: 'darkPower', label: '어둠의 힘', value: 30, description: '금지된 흑마법의 힘' }
+  ],
+  '덤블도어': [
+    { id: 'wisdom', label: '지혜의 힘', value: 40, description: '오랜 경험과 통찰력' },
+    { id: 'elderWand', label: '딱총나무 지팡이', value: 35, description: '전설의 마법 지팡이' },
+    { id: 'phoenix', label: '불사조 동행', value: 25, description: '충성스러운 불사조' }
+  ],
+  '스네이프': [
+    { id: 'doubleSpy', label: '이중 스파이', value: 30, description: '완벽한 위장술' },
+    { id: 'occlumency', label: '폐쇄술', value: 25, description: '마음 읽기 방어' },
+    { id: 'potionMaster', label: '물약 대가', value: 20, description: '최고의 물약 실력' }
+  ],
+  '도비': [
+    { id: 'freedom', label: '자유정신', value: 40, description: '자유로운 집요정의 힘' },
+    { id: 'loyalty', label: '절대 충성', value: 35, description: '해리에 대한 헌신' },
+    { id: 'houseMagic', label: '집요정 마법', value: 30, description: '독특한 마법 능력' }
+  ],
+  '말포이': [
+    { id: 'wealth', label: '재력의 힘', value: 25, description: '순혈 가문의 자원' },
+    { id: 'cunning', label: '교활함', value: 20, description: '슬리데린의 지략' },
+    { id: 'pride', label: '자존심', value: -15, description: '과도한 자만심' }
+  ],
+  '네빌': [
+    { id: 'latentPower', label: '잠재력 각성', value: 35, description: '숨겨진 능력의 발현' },
+    { id: 'plantMagic', label: '약초학 달인', value: 25, description: '식물 마법 전문' },
+    { id: 'courage', label: '성장한 용기', value: 30, description: '극복한 두려움' }
+  ],
+  '해그리드': [
+    { id: 'giantBlood', label: '거인의 혈통', value: 30, description: '강력한 육체' },
+    { id: 'creatures', label: '마법 생물 친화', value: 25, description: '생물들과의 유대' },
+    { id: 'loyalty', label: '변치 않는 충성', value: 20, description: '덤블도어에 대한 신뢰' }
+  ],
+  '시리우스': [
+    { id: 'animagus', label: '애니마구스', value: 25, description: '개로 변신하는 능력' },
+    { id: 'blackFamily', label: '블랙 가문', value: 20, description: '순혈 가문의 마법' },
+    { id: 'godfather', label: '대부의 사랑', value: 30, description: '해리를 향한 애정' }
+  ],
+  '맥고나걸': [
+    { id: 'transfiguration', label: '변신술 대가', value: 35, description: '최고의 변신술 실력' },
+    { id: 'discipline', label: '철저한 규율', value: 25, description: '엄격한 통제력' },
+    { id: 'headmistress', label: '교장의 권위', value: 20, description: '학교 전체 권한' }
+  ],
+  '벨라트릭스': [
+    { id: 'madness', label: '광기의 힘', value: 25, description: '예측 불가능한 행동' },
+    { id: 'darkArts', label: '흑마법 숙련', value: 30, description: '뛰어난 흑마법 실력' },
+    { id: 'devotion', label: '볼드모트 숭배', value: 20, description: '절대적 헌신' }
+  ],
+  '루나': [
+    { id: 'uniquePerspective', label: '독특한 시각', value: 30, description: '다른 관점으로 보기' },
+    { id: 'openMind', label: '열린 마음', value: 25, description: '편견 없는 사고' },
+    { id: 'spectrespecs', label: '스펙트레스펙', value: 20, description: '보이지 않는 것 보기' }
+  ],
+  '세드릭': [
+    { id: 'fairPlay', label: '정정당당', value: 30, description: '공정한 경기 정신' },
+    { id: 'loyalty', label: '후플푸프 충성', value: 25, description: '동료애와 인내' },
+    { id: 'champion', label: '챔피언의 기량', value: 25, description: '시합 우승 경험' }
   ]
 };
 
@@ -430,40 +509,44 @@ function GrowthChart({ selectedYear }) {
   );
 }
 
-// 시나리오 시뮬레이터
+// 개선된 시나리오 시뮬레이터
 function ScenarioSimulator({ characters }) {
   const [fighter1, setFighter1] = useState(characters[0]);
   const [fighter2, setFighter2] = useState(characters[3]);
-  const [scenario, setScenario] = useState({
-    friendship: false,
-    mothersLove: false,
-    horcrux: true,
-    dumbledoreGuidance: false,
-    crisis: false
-  });
+  const [modifiers1, setModifiers1] = useState({});
+  const [modifiers2, setModifiers2] = useState({});
 
-  const calculatePower = (char, isHarry) => {
+  const handleFighter1Change = (char) => {
+    setFighter1(char);
+    setModifiers1({});
+  };
+
+  const handleFighter2Change = (char) => {
+    setFighter2(char);
+    setModifiers2({});
+  };
+
+  const calculatePower = (char, modifiersState) => {
     let basePower = char.magic * 0.4 + char.combat * 0.4 + char.courage * 0.2;
     
-    if (isHarry && char.name === '해리 포터') {
-      if (scenario.friendship) basePower += 30;
-      if (scenario.mothersLove) basePower += 50;
-      if (scenario.crisis) basePower += 25;
-      if (scenario.dumbledoreGuidance) basePower += 15;
-    }
-    
-    if (!isHarry && char.name === '볼드모트') {
-      if (scenario.horcrux) basePower -= 30;
-    }
+    const charModifiers = CHARACTER_MODIFIERS[char.name] || [];
+    charModifiers.forEach(mod => {
+      if (modifiersState[mod.id]) {
+        basePower += mod.value;
+      }
+    });
     
     return basePower;
   };
 
-  const power1 = calculatePower(fighter1, true);
-  const power2 = calculatePower(fighter2, false);
+  const power1 = calculatePower(fighter1, modifiers1);
+  const power2 = calculatePower(fighter2, modifiers2);
   const total = power1 + power2;
-  const winRate1 = (power1 / total * 100).toFixed(1);
-  const winRate2 = (power2 / total * 100).toFixed(1);
+  const winRate1 = total > 0 ? (power1 / total * 100).toFixed(1) : 50;
+  const winRate2 = total > 0 ? (power2 / total * 100).toFixed(1) : 50;
+
+  const fighter1Modifiers = CHARACTER_MODIFIERS[fighter1.name] || [];
+  const fighter2Modifiers = CHARACTER_MODIFIERS[fighter2.name] || [];
 
   return (
     <div className="bg-slate-800 rounded-lg p-3 sm:p-6">
@@ -477,7 +560,7 @@ function ScenarioSimulator({ characters }) {
           <label className="block text-xs sm:text-sm text-slate-400 mb-2">마법사 1</label>
           <select
             value={fighter1.name}
-            onChange={(e) => setFighter1(characters.find(c => c.name === e.target.value))}
+            onChange={(e) => handleFighter1Change(characters.find(c => c.name === e.target.value))}
             className="w-full bg-slate-700 text-white rounded px-2 sm:px-3 py-2 border border-slate-600 text-sm"
           >
             {characters.map(char => (
@@ -490,7 +573,7 @@ function ScenarioSimulator({ characters }) {
           <label className="block text-xs sm:text-sm text-slate-400 mb-2">마법사 2</label>
           <select
             value={fighter2.name}
-            onChange={(e) => setFighter2(characters.find(c => c.name === e.target.value))}
+            onChange={(e) => handleFighter2Change(characters.find(c => c.name === e.target.value))}
             className="w-full bg-slate-700 text-white rounded px-2 sm:px-3 py-2 border border-slate-600 text-sm"
           >
             {characters.map(char => (
@@ -500,58 +583,57 @@ function ScenarioSimulator({ characters }) {
         </div>
       </div>
 
-      <div className="bg-slate-700 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-        <h4 className="font-bold text-amber-400 mb-3 text-sm sm:text-base">🎭 상황 변수 설정</h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scenario.friendship}
-              onChange={(e) => setScenario({...scenario, friendship: e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-slate-200">우정의 힘 (+30)</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scenario.mothersLove}
-              onChange={(e) => setScenario({...scenario, mothersLove: e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-slate-200">릴리의 보호 (+50)</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scenario.crisis}
-              onChange={(e) => setScenario({...scenario, crisis: e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-slate-200">절대 위기 (+25)</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={scenario.dumbledoreGuidance}
-              onChange={(e) => setScenario({...scenario, dumbledoreGuidance: e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-slate-200">덤블도어 지도 (+15)</span>
-          </label>
-          
-          <label className="flex items-center gap-2 cursor-pointer col-span-1 sm:col-span-2">
-            <input
-              type="checkbox"
-              checked={scenario.horcrux}
-              onChange={(e) => setScenario({...scenario, horcrux: e.target.checked})}
-              className="w-4 h-4"
-            />
-            <span className="text-slate-200">호크룩스 약점 (볼드모트 -30)</span>
-          </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="bg-slate-700 rounded-lg p-3 sm:p-4">
+          <h4 className="font-bold text-amber-400 mb-3 text-sm sm:text-base">{fighter1.name}의 상황 변수</h4>
+          {fighter1Modifiers.length > 0 ? (
+            <div className="space-y-2">
+              {fighter1Modifiers.map(mod => (
+                <label key={mod.id} className="flex items-start gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={modifiers1[mod.id] || false}
+                    onChange={(e) => setModifiers1({...modifiers1, [mod.id]: e.target.checked})}
+                    className="w-4 h-4 mt-0.5 flex-shrink-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-slate-200 text-xs sm:text-sm">
+                      {mod.label} ({mod.value > 0 ? '+' : ''}{mod.value})
+                    </div>
+                    <div className="text-slate-400 text-xs">{mod.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-400 text-xs sm:text-sm">이 캐릭터는 특별한 상황 변수가 없습니다.</div>
+          )}
+        </div>
+
+        <div className="bg-slate-700 rounded-lg p-3 sm:p-4">
+          <h4 className="font-bold text-red-400 mb-3 text-sm sm:text-base">{fighter2.name}의 상황 변수</h4>
+          {fighter2Modifiers.length > 0 ? (
+            <div className="space-y-2">
+              {fighter2Modifiers.map(mod => (
+                <label key={mod.id} className="flex items-start gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={modifiers2[mod.id] || false}
+                    onChange={(e) => setModifiers2({...modifiers2, [mod.id]: e.target.checked})}
+                    className="w-4 h-4 mt-0.5 flex-shrink-0"
+                  />
+                  <div className="flex-1">
+                    <div className="text-slate-200 text-xs sm:text-sm">
+                      {mod.label} ({mod.value > 0 ? '+' : ''}{mod.value})
+                    </div>
+                    <div className="text-slate-400 text-xs">{mod.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-400 text-xs sm:text-sm">이 캐릭터는 특별한 상황 변수가 없습니다.</div>
+          )}
         </div>
       </div>
 
@@ -581,10 +663,11 @@ function ScenarioSimulator({ characters }) {
           <div className="text-amber-400 font-bold mb-2 sm:mb-3 text-sm sm:text-base truncate">{fighter1.name}</div>
           <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-slate-300">
             <div>기본: {(fighter1.magic * 0.4 + fighter1.combat * 0.4 + fighter1.courage * 0.2).toFixed(1)}</div>
-            {scenario.friendship && <div className="text-green-400">+ 우정: +30</div>}
-            {scenario.mothersLove && <div className="text-pink-400">+ 릴리: +50</div>}
-            {scenario.crisis && <div className="text-orange-400">+ 위기: +25</div>}
-            {scenario.dumbledoreGuidance && <div className="text-blue-400">+ 덤블도어: +15</div>}
+            {fighter1Modifiers.map(mod => modifiers1[mod.id] && (
+              <div key={mod.id} className={mod.value > 0 ? 'text-green-400' : 'text-red-400'}>
+                {mod.value > 0 ? '+' : ''} {mod.label}: {mod.value > 0 ? '+' : ''}{mod.value}
+              </div>
+            ))}
             <div className="pt-2 border-t border-slate-600 text-amber-400 font-bold">
               최종: {power1.toFixed(1)}
             </div>
@@ -595,7 +678,11 @@ function ScenarioSimulator({ characters }) {
           <div className="text-red-400 font-bold mb-2 sm:mb-3 text-sm sm:text-base truncate">{fighter2.name}</div>
           <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm text-slate-300">
             <div>기본: {(fighter2.magic * 0.4 + fighter2.combat * 0.4 + fighter2.courage * 0.2).toFixed(1)}</div>
-            {scenario.horcrux && <div className="text-red-400">- 호크룩스: -30</div>}
+            {fighter2Modifiers.map(mod => modifiers2[mod.id] && (
+              <div key={mod.id} className={mod.value > 0 ? 'text-green-400' : 'text-red-400'}>
+                {mod.value > 0 ? '+' : ''} {mod.label}: {mod.value > 0 ? '+' : ''}{mod.value}
+              </div>
+            ))}
             <div className="pt-2 border-t border-slate-600 text-red-400 font-bold">
               최종: {power2.toFixed(1)}
             </div>
@@ -604,31 +691,45 @@ function ScenarioSimulator({ characters }) {
       </div>
 
       <div className={`text-center p-3 sm:p-4 rounded-lg ${
-        power1 > power2 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+        power1 > power2 ? 'bg-amber-500/20 text-amber-400' : power2 > power1 ? 'bg-red-500/20 text-red-400' : 'bg-slate-500/20 text-slate-400'
       }`}>
         <div className="text-lg sm:text-xl font-bold mb-1 sm:mb-2">
-          🏆 {power1 > power2 ? fighter1.name : fighter2.name} 승리!
+          {power1 > power2 ? `🏆 ${fighter1.name} 승리!` : power2 > power1 ? `🏆 ${fighter2.name} 승리!` : '⚔️ 무승부!'}
         </div>
         <div className="text-xs sm:text-sm">
           {power1 > power2 
-            ? '데이터 너머의 힘이 승리를 가져왔습니다!' 
-            : '표면적 능력이 더 강합니다.'}
+            ? `${fighter1.name}의 특별한 힘이 승리를 가져왔습니다!`
+            : power2 > power1
+            ? `${fighter2.name}의 특별한 힘이 승리를 가져왔습니다!`
+            : '양측의 힘이 완벽하게 균형을 이룹니다!'}
         </div>
       </div>
 
       <div className="mt-4 bg-violet-900/30 rounded p-3 text-xs sm:text-sm text-violet-200">
         <p className="font-bold mb-2">💡 데이터 리터러시 포인트</p>
-        <p>영화에서 해리가 이긴 이유: 숨겨진 변수들(사랑, 우정, 희생)이 측정 가능한 능력치보다 더 중요했기 때문입니다.</p>
+        <p>각 캐릭터마다 고유한 상황 변수가 있습니다. 동일한 기본 능력치라도 상황과 맥락에 따라 승패가 달라질 수 있습니다!</p>
       </div>
     </div>
   );
 }
 
-// 팀 전투 시뮬레이터 (간소화)
+// 개선된 팀 전투 시뮬레이터 (자유 구성)
 function TeamBattleSimulator({ characters }) {
-  const [teamA] = useState([characters[0], characters[1], characters[2]]);
-  const [teamB] = useState([characters[3]]);
+  const [teamA, setTeamA] = useState([characters[0], characters[1], characters[2]]);
+  const [teamB, setTeamB] = useState([characters[3]]);
   
+  const addMemberToTeam = (team, setTeam, character) => {
+    if (team.length < 5 && !team.find(c => c.name === character.name)) {
+      setTeam([...team, character]);
+    }
+  };
+
+  const removeMemberFromTeam = (team, setTeam, index) => {
+    if (team.length > 1) {
+      setTeam(team.filter((_, i) => i !== index));
+    }
+  };
+
   const calculateTeamPower = (team) => {
     const individualPower = team.reduce((sum, char) => {
       return sum + (char.magic * 0.4 + char.combat * 0.4 + char.courage * 0.2);
@@ -644,6 +745,9 @@ function TeamBattleSimulator({ characters }) {
   const powerB = calculateTeamPower(teamB);
   const total = powerA + powerB;
 
+  const availableForA = characters.filter(c => !teamA.find(t => t.name === c.name));
+  const availableForB = characters.filter(c => !teamB.find(t => t.name === c.name));
+
   return (
     <div className="bg-slate-800 rounded-lg p-3 sm:p-6">
       <h3 className="text-lg sm:text-xl font-bold text-cyan-400 mb-3 sm:mb-4 flex items-center gap-2">
@@ -652,26 +756,88 @@ function TeamBattleSimulator({ characters }) {
       </h3>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        {/* 팀 A */}
         <div>
-          <h4 className="font-bold text-amber-400 mb-3 text-sm sm:text-base">팀 A (총 {teamA.length}명)</h4>
-          <div className="space-y-2">
-            {teamA.map(char => (
-              <div key={char.name} className="bg-slate-700 rounded p-2 text-xs sm:text-sm truncate">
-                {char.name} (팀워크: {char.teamwork})
+          <h4 className="font-bold text-amber-400 mb-3 text-sm sm:text-base">
+            팀 A (총 {teamA.length}명) {teamA.length >= 5 && <span className="text-xs text-amber-300">• 인원 마감</span>}
+          </h4>
+          <div className="space-y-2 mb-3">
+            {teamA.map((char, index) => (
+              <div key={index} className="bg-slate-700 rounded p-2 flex items-center justify-between text-xs sm:text-sm">
+                <span className="truncate">{char.name} (팀워크: {char.teamwork})</span>
+                {teamA.length > 1 && (
+                  <button
+                    onClick={() => removeMemberFromTeam(teamA, setTeamA, index)}
+                    className="text-red-400 hover:text-red-300 ml-2 flex-shrink-0"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
+          
+          {teamA.length < 5 && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-2">팀원 추가</label>
+              <select
+                onChange={(e) => {
+                  const char = characters.find(c => c.name === e.target.value);
+                  if (char) addMemberToTeam(teamA, setTeamA, char);
+                  e.target.value = '';
+                }}
+                className="w-full bg-slate-700 text-white rounded px-2 py-2 border border-slate-600 text-xs sm:text-sm"
+                value=""
+              >
+                <option value="">선택하세요...</option>
+                {availableForA.map(char => (
+                  <option key={char.name} value={char.name}>{char.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
         
+        {/* 팀 B */}
         <div>
-          <h4 className="font-bold text-red-400 mb-3 text-sm sm:text-base">팀 B (총 {teamB.length}명)</h4>
-          <div className="space-y-2">
-            {teamB.map(char => (
-              <div key={char.name} className="bg-slate-700 rounded p-2 text-xs sm:text-sm truncate">
-                {char.name} (팀워크: {char.teamwork})
+          <h4 className="font-bold text-red-400 mb-3 text-sm sm:text-base">
+            팀 B (총 {teamB.length}명) {teamB.length >= 5 && <span className="text-xs text-red-300">• 인원 마감</span>}
+          </h4>
+          <div className="space-y-2 mb-3">
+            {teamB.map((char, index) => (
+              <div key={index} className="bg-slate-700 rounded p-2 flex items-center justify-between text-xs sm:text-sm">
+                <span className="truncate">{char.name} (팀워크: {char.teamwork})</span>
+                {teamB.length > 1 && (
+                  <button
+                    onClick={() => removeMemberFromTeam(teamB, setTeamB, index)}
+                    className="text-red-400 hover:text-red-300 ml-2 flex-shrink-0"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
+          
+          {teamB.length < 5 && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-2">팀원 추가</label>
+              <select
+                onChange={(e) => {
+                  const char = characters.find(c => c.name === e.target.value);
+                  if (char) addMemberToTeam(teamB, setTeamB, char);
+                  e.target.value = '';
+                }}
+                className="w-full bg-slate-700 text-white rounded px-2 py-2 border border-slate-600 text-xs sm:text-sm"
+                value=""
+              >
+                <option value="">선택하세요...</option>
+                {availableForB.map(char => (
+                  <option key={char.name} value={char.name}>{char.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -690,15 +856,39 @@ function TeamBattleSimulator({ characters }) {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-xs sm:text-sm">
+        <div className="bg-slate-700 rounded p-3">
+          <div className="text-amber-400 font-bold mb-2">팀 A 분석</div>
+          <div className="space-y-1 text-slate-300">
+            <div>평균 팀워크: {(teamA.reduce((sum, c) => sum + c.teamwork, 0) / teamA.length).toFixed(1)}</div>
+            <div>팀워크 보너스: +{((teamA.reduce((sum, c) => sum + c.teamwork, 0) / teamA.length / 100) * 30 * teamA.length).toFixed(1)}</div>
+            <div className="pt-2 border-t border-slate-600 text-amber-400 font-bold">
+              최종 전투력: {powerA.toFixed(1)}
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-slate-700 rounded p-3">
+          <div className="text-red-400 font-bold mb-2">팀 B 분석</div>
+          <div className="space-y-1 text-slate-300">
+            <div>평균 팀워크: {(teamB.reduce((sum, c) => sum + c.teamwork, 0) / teamB.length).toFixed(1)}</div>
+            <div>팀워크 보너스: +{((teamB.reduce((sum, c) => sum + c.teamwork, 0) / teamB.length / 100) * 30 * teamB.length).toFixed(1)}</div>
+            <div className="pt-2 border-t border-slate-600 text-red-400 font-bold">
+              최종 전투력: {powerB.toFixed(1)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="bg-cyan-900/30 rounded p-3 sm:p-4 text-xs sm:text-sm text-cyan-200">
         <p className="font-bold mb-2">🤝 팀워크의 중요성</p>
-        <p>개인전에서는 볼드모트가 강하지만, 팀전에서는 해리+헤르미온느+론의 시너지가 압도합니다!</p>
+        <p>각 팀은 1-5명으로 구성 가능합니다. 팀워크가 높은 캐릭터들을 조합하면 시너지 보너스가 증가합니다!</p>
       </div>
     </div>
   );
 }
 
-// 산점도 (간소화)
+// 산점도 (기존 유지)
 function ScatterPlot({ characters }) {
   const [xAxis, setXAxis] = useState('magic');
   const [yAxis, setYAxis] = useState('grade');
@@ -809,7 +999,7 @@ function ScatterPlot({ characters }) {
   );
 }
 
-// 기숙사 히트맵 (간소화)
+// 히트맵 (기존 유지 - 간소화)
 function HouseHeatmap({ characters }) {
   const houses = ['그리핀도르', '슬리데린', '레이븐클로', '후플푸프'];
   const stats = ['magic', 'combat', 'courage', 'quidditch', 'teamwork', 'growth'];
@@ -913,7 +1103,6 @@ function App() {
   const [selectedCharacter, setSelectedCharacter] = useState(CHARACTERS[0]);
   const [activeTab, setActiveTab] = useState('radar');
   const [selectedYear, setSelectedYear] = useState(7);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const filteredCharacters = useMemo(() => {
     return CHARACTERS.filter(char => {
@@ -935,7 +1124,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      {/* 헤더 */}
       <header className="bg-gradient-to-r from-amber-600 via-red-600 to-purple-600 p-4 sm:p-6 shadow-lg">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between gap-3 mb-2">
@@ -944,13 +1132,12 @@ function App() {
               <h1 className="text-xl sm:text-3xl md:text-4xl font-bold">호그와트 빅데이터 대시보드</h1>
             </div>
           </div>
-          <p className="text-xs sm:text-sm text-amber-100">중학생을 위한 고급 데이터 리터러시 교육 플랫폼</p>
+          <p className="text-xs sm:text-sm text-amber-100">중학생을 위한 데이터 리터러시 교육 플랫폼 • v3.0 최종판</p>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto p-3 sm:p-6">
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* 좌측 패널 */}
           <div className="lg:col-span-1 space-y-4 sm:space-y-6">
             {/* 필터 */}
             <div className="bg-slate-800 rounded-lg p-4 sm:p-6">
@@ -1029,35 +1216,42 @@ function App() {
               </div>
             </div>
 
-            {/* 심화 분석 미션 */}
-            <div className="bg-gradient-to-br from-purple-900 to-indigo-900 rounded-lg p-4 sm:p-6 border-2 border-purple-500">
-              <h2 className="text-lg sm:text-xl font-bold text-purple-300 mb-3 sm:mb-4 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
-                심화 분석 미션
+            {/* 데이터 탐험 가이드 (학생용 간단 힌트) */}
+            <div className="bg-gradient-to-br from-indigo-900 to-blue-900 rounded-lg p-4 sm:p-6 border-2 border-indigo-500">
+              <h2 className="text-lg sm:text-xl font-bold text-indigo-300 mb-3 sm:mb-4 flex items-center gap-2">
+                <Compass className="w-4 h-4 sm:w-5 sm:h-5" />
+                데이터 탐험 가이드
               </h2>
               
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+              <div className="space-y-3 text-xs sm:text-sm">
                 <div className="bg-black/30 rounded p-2 sm:p-3">
-                  <div className="font-bold text-purple-300 mb-1">🎯 미션 1</div>
-                  <p className="text-purple-100">재력과 성적의 상관관계를 분석하세요.</p>
+                  <div className="font-bold text-indigo-300 mb-1">💡 시작하기</div>
+                  <p className="text-indigo-100">각 탭을 클릭해서 다양한 분석 방법을 탐험해보세요!</p>
                 </div>
                 
                 <div className="bg-black/30 rounded p-2 sm:p-3">
-                  <div className="font-bold text-purple-300 mb-1">⚔️ 미션 2</div>
-                  <p className="text-purple-100">왜 데이터상으로는 볼드모트가 이기는데 해리가 이겼을까요?</p>
+                  <div className="font-bold text-indigo-300 mb-1">🔍 탐험 힌트</div>
+                  <ul className="text-indigo-100 space-y-1 list-disc list-inside">
+                    <li>가장 강한 캐릭터는 누구일까요?</li>
+                    <li>숨겨진 능력을 찾아보세요</li>
+                    <li>상황이 바뀌면 결과도 바뀝니다!</li>
+                  </ul>
                 </div>
                 
                 <div className="bg-black/30 rounded p-2 sm:p-3">
-                  <div className="font-bold text-purple-300 mb-1">📈 미션 3</div>
-                  <p className="text-purple-100">성장 곡선을 보고 해리의 잠재력을 분석해보세요.</p>
+                  <div className="font-bold text-indigo-300 mb-1">🎯 도전 과제</div>
+                  <p className="text-indigo-100">약한 캐릭터가 강한 캐릭터를 이기는 방법을 찾아보세요!</p>
+                </div>
+
+                <div className="bg-black/30 rounded p-2 sm:p-3">
+                  <div className="font-bold text-indigo-300 mb-1">🤝 협력의 힘</div>
+                  <p className="text-indigo-100">팀전투에서 나만의 최강 팀을 만들어보세요!</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 우측 패널 - 탭 뷰어 */}
           <div className="lg:col-span-2">
-            {/* 탭 메뉴 - 모바일에서는 스크롤 가능 */}
             <div className="mb-4 sm:mb-6">
               <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
                 {tabs.map(tab => {
@@ -1080,7 +1274,6 @@ function App() {
               </div>
             </div>
 
-            {/* 탭 컨텐츠 */}
             <div>
               {activeTab === 'radar' && <RadarChart character={selectedCharacter} />}
               {activeTab === 'hidden' && <HiddenStatsRadar character={selectedCharacter} />}
@@ -1094,10 +1287,10 @@ function App() {
         </div>
       </div>
 
-      {/* 푸터 */}
       <footer className="bg-slate-800 mt-8 sm:mt-12 py-4 sm:py-6 text-center text-slate-400">
-        <p className="text-xs sm:text-sm mb-2">🧙‍♂️ 호그와트 빅데이터 대시보드 Pro</p>
-        <p className="text-xs">✨ 7개 분석 모드 • 모바일/태블릿/데스크톱 최적화</p>
+        <p className="text-xs sm:text-sm mb-2">🧙‍♂️ 호그와트 빅데이터 대시보드 v3.0 최종판</p>
+        <p className="text-xs">✨ 자유 팀 구성 • 캐릭터별 상황 변수 • 완전 반응형 • 학생용 탐험 가이드</p>
+        <p className="text-xs mt-1 text-slate-500">"데이터는 시작일 뿐, 맥락이 진실을 말한다"</p>
       </footer>
     </div>
   );
